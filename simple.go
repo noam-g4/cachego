@@ -23,11 +23,6 @@ func NewCacheWithTTL[K comparable, V any](size int32, ttl int16) Cache[K, V] {
 	if size > 0 {
 		s = size
 	}
-
-	if ttl < 0 {
-		ttl = 0
-	}
-
 	return &simple[K, V]{size: s, data: make(map[K]V), mx: &sync.Mutex{}, ttl: ttl}
 }
 

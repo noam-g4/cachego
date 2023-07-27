@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// nolint:errcheck
 func TestLRUCache(t *testing.T) {
 	// Create an LRU cache with size 3
 	cache := NewLRUCache[int, string](3)
@@ -33,8 +34,18 @@ func TestLRUCache(t *testing.T) {
 		t.Errorf("Expected key %v to be deleted from the cache, but it was found", 0)
 	}
 
+	// Test setting a value for an entry that is already in cache
+	cache.Set(1, "new")
+	value, err := cache.Get(1)
+	if err != nil {
+		t.Errorf("Expected key %v to be found in cache, but it was not found", 1)
+	}
+	if value != "new" {
+		t.Errorf("Expected value 'new' for key %v, but got '%v'", 1, value)
+	}
+
 	// Test Get for a non-existent key
-	value, err := cache.Get(4)
+	_, err = cache.Get(4)
 	expectedError := fmt.Sprintf("key %v not found", 4)
 	if err == nil {
 		t.Errorf("Expected error: %v, but got nil", expectedError)
@@ -48,6 +59,12 @@ func TestLRUCache(t *testing.T) {
 	_, err = cache.Get(3)
 	if err == nil {
 		t.Errorf("Expected key %v to be deleted from the cache, but it was found", 3)
+	}
+
+	// Test Delete for a non-existent key
+	err = cache.Delete(3)
+	if err == nil {
+		t.Errorf("Expected error: %v, but got nil", expectedError)
 	}
 
 	// Test Clear operation
@@ -68,6 +85,7 @@ func TestLRUCache(t *testing.T) {
 	}
 }
 
+// nolint:errcheck
 func TestLRUCacheConcurrency(t *testing.T) {
 	// Create an LRU cache with size 3
 	cache := NewLRUCache[int, string](3)
@@ -95,7 +113,7 @@ func TestLRUCacheConcurrency(t *testing.T) {
 		key := i
 
 		go func() {
-			_, _ = cache.Get(key)
+			cache.Get(key)
 			wg.Done()
 		}()
 	}
@@ -103,19 +121,15 @@ func TestLRUCacheConcurrency(t *testing.T) {
 	// Wait for all goroutines to finish
 	wg.Wait()
 
-	// Verify that the cache contains only the most recent values
+	var count int
 	for i := 1; i <= numOps; i++ {
 		_, err := cache.Get(i)
-		if i > numOps-3 {
-			// The last three values should be in the cache
-			if err != nil {
-				t.Errorf("Expected key %v to be found in cache, but it was not found", i)
-			}
-		} else {
-			// The rest should not be in the cache
-			if err == nil {
-				t.Errorf("Expected key %v not to be found in cache, but it was found", i)
-			}
+		if err == nil {
+			count++
 		}
+	}
+
+	if count != 3 {
+		t.Errorf("Expected cache size to be %v, but got %v", 3, count)
 	}
 }

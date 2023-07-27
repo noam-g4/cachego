@@ -122,16 +122,6 @@ func (l *lru[K, V]) unshift(n *node[K, V]) {
 }
 
 func (l *lru[K, V]) pop() {
-	if l.tail == nil {
-		return
-	}
-
-	if l.tail.prev == nil {
-		l.tail = nil
-		l.head = nil
-		return
-	}
-
 	delete(l.cache, l.tail.key)
 	l.tail.prev.next = nil
 	l.tail = l.tail.prev
