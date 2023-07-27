@@ -21,7 +21,7 @@ type node[K comparable, T any] struct {
 	prev  *node[K, T]
 }
 
-// NewLRUCache creates a new instance of an LRU cache with the given size.
+// NewLRUCache creates a new thread-safe instance of an LRU cache with the given size.
 // It returns a Cache[K, V] interface that can be used to interact with the cache.
 func NewLRUCache[K comparable, V any](size int32) Cache[K, V] {
 	return &lru[K, V]{

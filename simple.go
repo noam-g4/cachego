@@ -15,7 +15,7 @@ type simple[K comparable, V any] struct {
 	mx   *sync.Mutex
 }
 
-// NewCacheWithTTL creates a new instance of a cache with the specified size and ttl.
+// NewCacheWithTTL creates a new thread-safe instance of a cache with the specified size and ttl.
 // If the size is less than or equal to zero, a default size of 100 will be used.
 // If the ttl is less than or equal to zero, the cache will not expire.
 func NewCacheWithTTL[K comparable, V any](size int32, ttl int16) Cache[K, V] {
@@ -26,7 +26,7 @@ func NewCacheWithTTL[K comparable, V any](size int32, ttl int16) Cache[K, V] {
 	return &simple[K, V]{size: s, data: make(map[K]V), mx: &sync.Mutex{}, ttl: ttl}
 }
 
-// NewCache creates a new instance of the Simple cache with the specified size.
+// NewCache creates a new thread-safe instance of the Simple cache with the specified size.
 // If the size is less than or equal to zero, a default size of 100 will be used.
 func NewCache[K comparable, V any](size int32) Cache[K, V] {
 	return NewCacheWithTTL[K, V](size, 0)
