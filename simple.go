@@ -2,7 +2,9 @@ package cachego
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -13,23 +15,59 @@ type simple[K comparable, V any] struct {
 	ttl  int16 // in seconds
 	data map[K]V
 	mx   *sync.Mutex
+	file File
 }
 
-// NewCacheWithTTL creates a new thread-safe instance of a cache with the specified size and ttl.
+type Opts struct {
+	Size int32
+	TTL  int16
+	File File
+}
+
+// NewCache creates a new thread-safe instance of a cache with the specified size and ttl.
 // If the size is less than or equal to zero, a default size of 100 will be used.
 // If the ttl is less than or equal to zero, the cache will not expire.
-func NewCacheWithTTL[K comparable, V any](size int32, ttl int16) Cache[K, V] {
+func NewCache[K comparable, V any](opts Opts) Cache[K, V] {
 	s := int32(defaultSize)
-	if size > 0 {
-		s = size
+	if opts.Size > 0 {
+		s = opts.Size
 	}
-	return &simple[K, V]{size: s, data: make(map[K]V), mx: &sync.Mutex{}, ttl: ttl}
-}
 
-// NewCache creates a new thread-safe instance of the Simple cache with the specified size.
-// If the size is less than or equal to zero, a default size of 100 will be used.
-func NewCache[K comparable, V any](size int32) Cache[K, V] {
-	return NewCacheWithTTL[K, V](size, 0)
+	var used int32
+	data := make(map[K]V, s)
+
+	if opts.File != nil {
+
+		if bytes, err := opts.File.Load(); err == nil {
+
+			if err = json.Unmarshal(bytes, &data); err != nil {
+				log.Printf("error unmarshalling cache data: %v", err)
+			} else {
+
+				l := int32(len(data))
+				if l > s {
+					log.Printf("cache data size %v is larger than cache size %v", l, s)
+					data = make(map[K]V, s)
+				} else {
+					used = l
+				}
+
+			}
+
+		} else {
+			log.Printf("loading cache data failed: %v", err)
+		}
+
+	}
+
+	return &simple[K, V]{
+		size: s,
+		used: used,
+		data: data,
+		mx:   &sync.Mutex{},
+		ttl:  opts.TTL,
+		file: opts.File,
+	}
 }
 
 // Set stores the provided value under the given key in the cache.
@@ -98,7 +136,14 @@ func (c *simple[K, V]) Clear() error {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
-	c.data = make(map[K]V)
+	if c.file != nil {
+		bytes, _ := json.Marshal(c.data)
+		if err := c.file.Dump(bytes); err != nil {
+			return err
+		}
+	}
+
+	c.data = make(map[K]V, c.size)
 	c.used = 0
 	return nil
 }

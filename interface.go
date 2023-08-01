@@ -28,3 +28,16 @@ type Cache[K comparable, V any] interface {
 	// during this operation.
 	Clear() error
 }
+
+// File represents an interface for loading from and dumping data to a file.
+type File interface {
+	// Load reads the contents of the file and returns the data read from the file as a byte slice.
+	// If the operation is successful, it returns the read data and a nil error.
+	// If an error occurs during the load operation, it returns a non-nil error.
+	Load() ([]byte, error)
+
+	// Dump writes the given data as a byte slice to the file.
+	// If the operation is successful, it returns a nil error.
+	// If an error occurs during the dump operation, it returns a non-nil error.
+	Dump(data []byte) error
+}

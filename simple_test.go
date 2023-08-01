@@ -7,7 +7,7 @@ import (
 )
 
 func TestSimpleCache(t *testing.T) {
-	c := NewCache[int, string](1)
+	c := NewCache[int, string](Opts{Size: 1})
 	if c == nil {
 		t.Error("NewSimple returned nil")
 	}
@@ -64,7 +64,7 @@ func TestSimpleCache(t *testing.T) {
 }
 
 func TestSimpleCacheConcurrency(t *testing.T) {
-	c := NewCache[int, string](100)
+	c := NewCache[int, string](Opts{Size: 100})
 	wg := sync.WaitGroup{}
 
 	wg.Add(100)
@@ -103,8 +103,8 @@ func TestSimpleCacheConcurrency(t *testing.T) {
 	}
 }
 
-func TestCacheWithTTL(t *testing.T) {
-	c := NewCacheWithTTL[int, string](1, 1)
+func TestCache(t *testing.T) {
+	c := NewCache[int, string](Opts{Size: 1, TTL: 1})
 
 	if err := c.Set(1, "one"); err != nil {
 		t.Errorf("Set returned error: %s", err)

@@ -26,7 +26,7 @@ type node[K comparable, T any] struct {
 func NewLRUCache[K comparable, V any](size int32) Cache[K, V] {
 	return &lru[K, V]{
 		size:  size,
-		cache: make(map[K]*node[K, V]),
+		cache: make(map[K]*node[K, V], size),
 		mx:    &sync.Mutex{},
 	}
 }
@@ -41,6 +41,7 @@ func (l *lru[K, V]) Set(key K, value V) error {
 
 	if n, ok := l.cache[key]; ok {
 		n.value = value
+		l.pull(n)
 		l.unshift(n)
 		return nil
 	}
@@ -66,16 +67,14 @@ func (l *lru[K, V]) Get(key K) (V, error) {
 	l.mx.Lock()
 	defer l.mx.Unlock()
 
-	var empty V
-	err := fmt.Errorf("key %v not found", key)
-
 	if n, ok := l.cache[key]; ok {
 		l.pull(n)
 		l.unshift(n)
 		return n.value, nil
 	}
 
-	return empty, err
+	var empty V
+	return empty, fmt.Errorf("key %v not found", key)
 }
 
 // Delete removes the key-value pair associated with the given key from the LRU cache.
@@ -104,7 +103,7 @@ func (l *lru[K, V]) Clear() error {
 
 	l.head = nil
 	l.tail = nil
-	l.cache = make(map[K]*node[K, V])
+	l.cache = make(map[K]*node[K, V], l.size)
 	l.used = 0
 	return nil
 }
