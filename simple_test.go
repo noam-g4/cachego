@@ -78,7 +78,7 @@ func TestSimpleCacheConcurrency(t *testing.T) {
 	}
 	wg.Wait()
 
-	wg.Add(200)
+	wg.Add(100)
 	for i := 0; i < 100; i++ {
 		go func(i int) {
 			defer wg.Done()
@@ -87,7 +87,9 @@ func TestSimpleCacheConcurrency(t *testing.T) {
 			}
 		}(i)
 	}
+	wg.Wait()
 
+	wg.Add(100)
 	for i := 0; i < 100; i++ {
 		go func(i int) {
 			defer wg.Done()
@@ -103,7 +105,7 @@ func TestSimpleCacheConcurrency(t *testing.T) {
 	}
 }
 
-func TestCache(t *testing.T) {
+func TestCacheTTL(t *testing.T) {
 	c := NewCache[int, string](Opts{Size: 1, TTL: 1})
 
 	if err := c.Set(1, "one"); err != nil {
